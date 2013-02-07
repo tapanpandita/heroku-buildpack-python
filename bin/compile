@@ -142,6 +142,40 @@ fi
 
 set -e
 
+
+### PhantomJS
+
+# config
+PHANTOMJS_VERSION="1.8.1"
+S3_BUCKET="stomita-buildpack-phantomjs"
+
+# s3 packages
+PHANTOMJS_FILE_NAME="buildpack-phantomjs-${PHANTOMJS_VERSION}.tar.gz"
+BUILDPACK_PHANTOMJS_PACKAGE="http://${S3_BUCKET}.s3.amazonaws.com/${PHANTOMJS_FILE_NAME}"
+
+
+mkdir -p $CACHE_DIR
+if ! [ -e $CACHE_DIR/$PHANTOMJS_FILE_NAME ]; then
+  puts-step "-----> Fetching PhantomJS buildpack binaries"
+  echo "-----> Fetching PhantomJS buildpack binaries"
+  curl $BUILDPACK_PHANTOMJS_PACKAGE -s -o $CACHE_DIR/$PHANTOMJS_FILE_NAME
+fi
+
+puts-step "-----> Extracting PhantomJS binaries"
+echo "-----> Extracting PhantomJS binaries"
+mkdir -p $BUILD_DIR/vendor/phantomjs
+tar zxf $CACHE_DIR/$PHANTOMJS_FILE_NAME -C $BUILD_DIR/vendor/phantomjs
+
+puts-step "-----> PhantomJS binaries in: $BUILD_DIR/vendor/phantomjs"
+
+### CasperJS
+
+echo "-----> Cloning casperjs"
+
+cd $BUILD_DIR/vendor
+git clone git://github.com/n1k0/casperjs.git
+
+
 # Pylibmc support.
 # See [`bin/steps/pylibmc`](pylibmc.html).
 source $BIN_DIR/steps/pylibmc
@@ -168,7 +202,7 @@ for dir in $CACHED_DIRS; do
 done
 
 # Set context environment variables.
-set-env PATH '$HOME/.heroku/python/bin:$PATH'
+set-env PATH '$HOME/.heroku/python/bin:/app/vendor/phantomjs/bin:/app/vendor/casperjs/bin:$PATH'
 set-env PYTHONUNBUFFERED true
 set-env PYTHONHOME /app/.heroku/python
 set-default-env LIBRARY_PATH /app/.heroku/vendor/lib
